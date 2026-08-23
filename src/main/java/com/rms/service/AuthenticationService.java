@@ -3,11 +3,13 @@ package com.rms.service;
 import com.rms.dto.LoginRequest;
 import com.rms.dto.LoginResponse;
 import com.rms.security.JwtService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 @Service
+@Profile("!dev")
 public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -18,10 +20,8 @@ public class AuthenticationService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        var authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        var authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.username(), request.password()));
         JwtService.TokenData token = jwtService.generate(authentication.getName(), authentication.getAuthorities().stream().toList());
-        return new LoginResponse("Bearer", token.token(), token.issuer(), token.subject(), token.issuedAt(),
-                token.expiresAt(), token.authorities());
+        return new LoginResponse("Bearer", token.token(), token.issuer(), token.subject(), token.issuedAt(), token.expiresAt(), token.authorities());
     }
 }

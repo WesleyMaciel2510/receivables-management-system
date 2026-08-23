@@ -1,9 +1,10 @@
 server:
-  port: 8080
+  port: 8081
 
 logging:
   level:
     root: INFO
+    com.rms: DEBUG
 
 spring:
   datasource:
@@ -20,7 +21,7 @@ spring:
 app:
   aws:
     endpoint: ${AWS_ENDPOINT:http://localhost:4566}
-    region: ${AWS_REGION:sa-east-1}
+    region: ${AWS_REGION:us-east-1}
     access-key: ${AWS_ACCESS_KEY:test}
     secret-key: ${AWS_SECRET_KEY:test}
     payment-topic-arn: ${AWS_PAYMENT_TOPIC_ARN:}

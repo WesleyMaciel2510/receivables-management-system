@@ -1,19 +1,22 @@
 package com.rms.config;
 
-import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.KmsClientBuilder;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.SnsClientBuilder;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.SqsClientBuilder;
+
+import java.net.URI;
 
 @Configuration
 public class AwsClientConfig {
@@ -48,10 +51,13 @@ public class AwsClientConfig {
     }
 
     private static Region region(AwsProperties properties) {
-        return Region.of(properties.region() == null || properties.region().isBlank() ? "sa-east-1" : properties.region());
+        return Region.of(properties.region() == null || properties.region().isBlank() ? "us-east-1" : properties.region());
     }
 
-    private static StaticCredentialsProvider credentials(AwsProperties properties) {
+    private static AwsCredentialsProvider credentials(AwsProperties properties) {
+        if (properties.endpoint() == null || properties.endpoint().isBlank()) {
+            return DefaultCredentialsProvider.builder().build();
+        }
         return StaticCredentialsProvider.create(AwsBasicCredentials.create(
                 blankDefault(properties.accessKey(), "test"), blankDefault(properties.secretKey(), "test")));
     }
@@ -61,10 +67,9 @@ public class AwsClientConfig {
     }
 
     private static void endpoint(SnsClientBuilder builder, AwsProperties properties) {
-        if (properties.endpoint() == null || properties.endpoint().isBlank()) {
-            return;
+        if (properties.endpoint() != null && !properties.endpoint().isBlank()) {
+            builder.endpointOverride(URI.create(properties.endpoint()));
         }
-        builder.endpointOverride(URI.create(properties.endpoint()));
     }
 
     private static void endpoint(SqsClientBuilder builder, AwsProperties properties) {
@@ -74,12 +79,6 @@ public class AwsClientConfig {
     }
 
     private static void endpoint(S3ClientBuilder builder, AwsProperties properties) {
-        if (properties.endpoint() != null && !properties.endpoint().isBlank()) {
-            builder.endpointOverride(URI.create(properties.endpoint()));
-        }
-    }
-
-    private static void endpoint(KmsClientBuilder builder, AwsProperties properties) {
         if (properties.endpoint() != null && !properties.endpoint().isBlank()) {
             builder.endpointOverride(URI.create(properties.endpoint()));
         }
