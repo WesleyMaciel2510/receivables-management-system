@@ -5,18 +5,18 @@ import com.rms.repository.AppUserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
+@Profile("!dev")
 public class SecurityDataInitializer {
     @Bean
     CommandLineRunner initializeSecurityUser(SecurityProperties properties, AppUserRepository repository,
             PasswordEncoder passwordEncoder) {
         return args -> {
             SecurityProperties.Bootstrap bootstrap = properties.bootstrap();
-            if (!bootstrap.enabled()) {
-                return;
-            }
+            if (!bootstrap.enabled()) return;
             if (bootstrap.username() == null || bootstrap.username().isBlank()
                     || bootstrap.password() == null || bootstrap.password().isBlank()) {
                 throw new IllegalStateException("APP_SECURITY_USERNAME and APP_SECURITY_PASSWORD are required when bootstrap is enabled");

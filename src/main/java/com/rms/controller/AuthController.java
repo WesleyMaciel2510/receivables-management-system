@@ -4,6 +4,7 @@ import com.rms.dto.LoginRequest;
 import com.rms.dto.LoginResponse;
 import com.rms.service.AuthenticationService;
 import jakarta.validation.Valid;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Profile("!dev")
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthenticationService authenticationService;

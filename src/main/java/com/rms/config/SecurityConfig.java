@@ -6,10 +6,12 @@ import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,12 +23,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@Profile("!dev")
 @EnableConfigurationProperties({SecurityProperties.class, AwsProperties.class})
 public class SecurityConfig {
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean
     DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
@@ -35,24 +35,17 @@ public class SecurityConfig {
         return provider;
     }
 
-    @Bean
-    AuthenticationManager authenticationManager(DaoAuthenticationProvider provider) {
-        return provider::authenticate;
-    }
+    @Bean AuthenticationManager authenticationManager(DaoAuthenticationProvider provider) { return provider::authenticate; }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter,
             DaoAuthenticationProvider authenticationProvider, CorsConfigurationSource corsConfigurationSource) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+        http.csrf(AbstractHttpConfigurer::disable).cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(new RestAuthenticationEntryPoint())
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(new RestAuthenticationEntryPoint())
                         .accessDeniedHandler(new RestAccessDeniedHandler()))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .authorizeHttpRequests(authorize -> authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/clients/archived", "/receivables/archived").hasRole("ADMIN")
                         .requestMatchers("/clients/**", "/receivables/**").hasRole("USER")
@@ -65,8 +58,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(SecurityProperties properties) {
         CorsConfiguration configuration = new CorsConfiguration();
         String origins = properties == null || properties.cors() == null ? "" : properties.cors().allowedOrigins();
-        List<String> allowedOrigins = origins == null ? List.of() : Arrays.stream(origins.split(","))
-                .map(String::trim).filter(origin -> !origin.isBlank()).toList();
+        List<String> allowedOrigins = origins == null ? List.of() : Arrays.stream(origins.split(",")).map(String::trim).filter(origin -> !origin.isBlank()).toList();
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));

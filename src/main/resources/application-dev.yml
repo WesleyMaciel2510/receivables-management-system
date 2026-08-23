@@ -18,10 +18,15 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:}
 app:
   aws:
     endpoint: ${AWS_ENDPOINT:}
-    region: ${AWS_REGION:sa-east-1}
+    region: ${AWS_REGION:us-east-1}
     access-key: ${AWS_ACCESS_KEY:}
     secret-key: ${AWS_SECRET_KEY:}
     payment-topic-arn: ${AWS_PAYMENT_TOPIC_ARN:}
@@ -35,16 +40,16 @@ app:
     secret: ${APP_ENCRYPTION_SECRET}
     current-key-version: ${APP_ENCRYPTION_CURRENT_KEY_VERSION:1}
     legacy-secrets: ${APP_ENCRYPTION_LEGACY_SECRETS:}
-    kms-provider: ${APP_ENCRYPTION_KMS_PROVIDER:localstack}
+    kms-provider: ${APP_ENCRYPTION_KMS_PROVIDER:aws}
     kms-key-alias: ${APP_ENCRYPTION_KMS_KEY_ALIAS:alias/rms-fle}
     kms-endpoint: ${AWS_ENDPOINT:}
   security:
     jwt:
       issuer: ${APP_SECURITY_JWT_ISSUER:rms-dev}
-      secret: ${APP_SECURITY_JWT_SECRET}
+      secret: ${APP_SECURITY_JWT_SECRET:placeholder-not-used-by-cognito}
       access-token-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_MINUTES:15}
     bootstrap:
-      enabled: ${APP_SECURITY_BOOTSTRAP_ENABLED:false}
+      enabled: false
       username: ${APP_SECURITY_USERNAME:}
       password: ${APP_SECURITY_PASSWORD:}
       roles: ${APP_SECURITY_ROLES:ROLE_USER}
