@@ -1,0 +1,75 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      POSTGRES_URL: jdbc:postgresql://postgres:5432/${POSTGRES_URL:?POSTGRES_URL must be set}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      APP_SECURITY_JWT_SECRET: ${APP_SECURITY_JWT_SECRET:?APP_SECURITY_JWT_SECRET must be set}
+      APP_SECURITY_USERNAME: ${APP_SECURITY_USERNAME:-local-admin}
+      APP_SECURITY_PASSWORD: ${APP_SECURITY_PASSWORD:?APP_SECURITY_PASSWORD must be set}
+      APP_SECURITY_BOOTSTRAP_ENABLED: ${APP_SECURITY_BOOTSTRAP_ENABLED:-true}
+      APP_ENCRYPTION_SECRET: ${APP_ENCRYPTION_SECRET:?APP_ENCRYPTION_SECRET must be set}
+      APP_ENCRYPTION_KMS_PROVIDER: ${APP_ENCRYPTION_KMS_PROVIDER:-localstack}
+      APP_ENCRYPTION_KMS_KEY_ALIAS: ${APP_ENCRYPTION_KMS_KEY_ALIAS:-alias/rms-fle}
+      AWS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY: test
+      AWS_SECRET_KEY: test
+      AWS_PAYMENT_TOPIC_ARN: arn:aws:sns:sa-east-1:000000000000:payment-fanout-topic.fifo
+      AWS_RECONCILIATION_QUEUE_URL: http://localstack:4566/000000000000/payment-reconciliation-queue.fifo
+      AWS_ANALYTICS_QUEUE_URL: http://localstack:4566/000000000000/payment-analytics-queue.fifo
+      AWS_ANALYTICS_BUCKET: recebiveis-analytics
+    depends_on:
+      localstack:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - rms-network
+
+  localstack:
+    image: localstack/localstack:3.8.1
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/.ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    volumes:
+      - ./scripts/localstack:/etc/localstack/init/ready.d
+      - ./init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+    networks:
+      - rms-network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_URL: ${POSTGRES_URL:?POSTGRES_URL must be set}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_URL}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rms-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+networks:
+  rms-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

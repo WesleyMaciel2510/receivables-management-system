@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/001-create-receivables-domain.yaml
+  - include:
+      file: db/changelog/002-create-app-users.yaml
+  - include:
+      file: db/changelog/003-create-banking-core.yaml
+  - include:
+      file: db/changelog/004-encrypt-sensitive-fields.yaml
+  - include:
+      file: db/changelog/005-soft-delete.yaml

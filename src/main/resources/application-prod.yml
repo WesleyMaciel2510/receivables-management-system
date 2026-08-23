@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+logging:
+  level:
+    root: WARN
+
+spring:
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+app:
+  aws:
+    endpoint: ${AWS_ENDPOINT:}
+    region: ${AWS_REGION:sa-east-1}
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+    payment-topic-arn: ${AWS_PAYMENT_TOPIC_ARN:}
+    reconciliation-queue-url: ${AWS_RECONCILIATION_QUEUE_URL:}
+    analytics-queue-url: ${AWS_ANALYTICS_QUEUE_URL:}
+    analytics-bucket: ${AWS_ANALYTICS_BUCKET:recebiveis-analytics}
+    analytics-batch-size: ${AWS_ANALYTICS_BATCH_SIZE:500}
+    visibility-timeout-seconds: ${AWS_VISIBILITY_TIMEOUT_SECONDS:60}
+  encryption:
+    enabled: ${APP_ENCRYPTION_ENABLED:true}
+    secret: ${APP_ENCRYPTION_SECRET}
+    current-key-version: ${APP_ENCRYPTION_CURRENT_KEY_VERSION:1}
+    legacy-secrets: ${APP_ENCRYPTION_LEGACY_SECRETS:}
+    kms-provider: ${APP_ENCRYPTION_KMS_PROVIDER:aws}
+    kms-key-alias: ${APP_ENCRYPTION_KMS_KEY_ALIAS:alias/rms-fle}
+    kms-endpoint: ${AWS_ENDPOINT:}
+  security:
+    jwt:
+      issuer: ${APP_SECURITY_JWT_ISSUER}
+      secret: ${APP_SECURITY_JWT_SECRET}
+      access-token-minutes: ${APP_SECURITY_JWT_ACCESS_TOKEN_MINUTES:15}
+    bootstrap:
+      enabled: ${APP_SECURITY_BOOTSTRAP_ENABLED:false}
+      username: ${APP_SECURITY_USERNAME:}
+      password: ${APP_SECURITY_PASSWORD:}
+      roles: ${APP_SECURITY_ROLES:ROLE_USER}
+    cors:
+      allowed-origins: ${APP_SECURITY_CORS_ALLOWED_ORIGINS:}

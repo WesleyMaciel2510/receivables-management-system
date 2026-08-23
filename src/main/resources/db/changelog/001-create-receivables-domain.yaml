@@ -1,0 +1,156 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-clients
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: clients
+      changes:
+        - createTable:
+            tableName: clients
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(160)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cpf_cnpj
+                  type: VARCHAR(14)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(254)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: clients
+            columnNames: cpf_cnpj
+            constraintName: clients_cpf_cnpj_uq
+        - addUniqueConstraint:
+            tableName: clients
+            columnNames: email
+            constraintName: clients_email_uq
+        - sql:
+            sql: >-
+              ALTER TABLE clients ADD CONSTRAINT clients_status_ck
+              CHECK (status IN ('ACTIVE', 'INACTIVE'))
+      rollback:
+        - dropTable:
+            tableName: clients
+
+  - changeSet:
+      id: 002-create-receivables
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: receivables
+      changes:
+        - createTable:
+            tableName: receivables
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_amount
+                  type: NUMERIC(19, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: remaining_balance
+                  type: NUMERIC(19, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: receivables
+            baseColumnNames: client_id
+            referencedTableName: clients
+            referencedColumnNames: id
+            constraintName: receivables_client_fk
+            onDelete: RESTRICT
+        - createIndex:
+            tableName: receivables
+            indexName: receivables_client_id_idx
+            columns:
+              - column:
+                  name: client_id
+        - createIndex:
+            tableName: receivables
+            indexName: receivables_status_idx
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: receivables
+            indexName: receivables_due_date_idx
+            columns:
+              - column:
+                  name: due_date
+        - sql:
+            sql: >-
+              ALTER TABLE receivables ADD CONSTRAINT receivables_original_amount_ck
+              CHECK (original_amount > 0);
+              ALTER TABLE receivables ADD CONSTRAINT receivables_remaining_balance_ck
+              CHECK (remaining_balance >= 0 AND remaining_balance <= original_amount);
+              ALTER TABLE receivables ADD CONSTRAINT receivables_status_ck
+              CHECK (status IN ('PENDING', 'PARTIAL', 'PAID', 'OVERDUE', 'CANCELLED'))
+      rollback:
+        - dropTable:
+            tableName: receivables

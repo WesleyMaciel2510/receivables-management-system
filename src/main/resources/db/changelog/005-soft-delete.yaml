@@ -1,0 +1,132 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-soft-delete-clients
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: clients
+      changes:
+        - addColumn:
+            tableName: clients
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: clients
+            columnName: deleted_at
+
+  - changeSet:
+      id: 008-soft-delete-receivables
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: receivables
+      changes:
+        - addColumn:
+            tableName: receivables
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: receivables
+            columnName: deleted_at
+
+  - changeSet:
+      id: 009-soft-delete-app-users
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: app_users
+      changes:
+        - addColumn:
+            tableName: app_users
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: app_users
+            columnName: deleted_at
+
+  - changeSet:
+      id: 010-soft-delete-banks
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: banks
+      changes:
+        - addColumn:
+            tableName: banks
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: banks
+            columnName: deleted_at
+
+  - changeSet:
+      id: 011-soft-delete-bank-accounts
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: bank_accounts
+      changes:
+        - addColumn:
+            tableName: bank_accounts
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: bank_accounts
+            columnName: deleted_at
+
+  - changeSet:
+      id: 012-soft-delete-payment-effects
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: payment_effects
+      changes:
+        - addColumn:
+            tableName: payment_effects
+            columns:
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: payment_effects
+            columnName: deleted_at

@@ -1,0 +1,244 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-banking-core
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: clients
+      changes:
+        - createTable:
+            tableName: banks
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: compe_code
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ispb
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: banks
+            columnNames: compe_code
+            constraintName: banks_compe_code_uq
+        - createIndex:
+            tableName: banks
+            indexName: banks_compe_code_idx
+            unique: true
+            columns:
+              - column:
+                  name: compe_code
+        - createTable:
+            tableName: bank_accounts
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: client_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bank_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: account_type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: NUMERIC(19,4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: monthly_maintenance_fee
+                  type: NUMERIC(10,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: bank_accounts
+            baseColumnNames: client_id
+            referencedTableName: clients
+            referencedColumnNames: id
+            constraintName: bank_accounts_client_fk
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            baseTableName: bank_accounts
+            baseColumnNames: bank_id
+            referencedTableName: banks
+            referencedColumnNames: id
+            constraintName: bank_accounts_bank_fk
+            onDelete: RESTRICT
+        - addUniqueConstraint:
+            tableName: bank_accounts
+            columnNames: client_id, bank_id, account_type
+            constraintName: uk_client_bank_account_type
+        - createIndex:
+            tableName: bank_accounts
+            indexName: bank_accounts_client_id_idx
+            columns:
+              - column:
+                  name: client_id
+        - sql:
+            sql: >-
+              ALTER TABLE bank_accounts ADD CONSTRAINT bank_accounts_type_ck
+              CHECK (account_type IN ('CHECKING', 'PAYMENT', 'SAVINGS', 'ESCROW', 'SETTLEMENT'));
+              ALTER TABLE bank_accounts ADD CONSTRAINT bank_accounts_balance_ck
+              CHECK (balance >= 0);
+              ALTER TABLE bank_accounts ADD CONSTRAINT bank_accounts_payment_fee_ck
+              CHECK (account_type <> 'PAYMENT' OR monthly_maintenance_fee = 0);
+        - addColumn:
+            tableName: receivables
+            columns:
+              - column:
+                  name: debtor_account_id
+                  type: UUID
+              - column:
+                  name: creditor_account_id
+                  type: UUID
+        - addForeignKeyConstraint:
+            baseTableName: receivables
+            baseColumnNames: debtor_account_id
+            referencedTableName: bank_accounts
+            referencedColumnNames: id
+            constraintName: receivables_debtor_account_fk
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            baseTableName: receivables
+            baseColumnNames: creditor_account_id
+            referencedTableName: bank_accounts
+            referencedColumnNames: id
+            constraintName: receivables_creditor_account_fk
+            onDelete: RESTRICT
+        - createTable:
+            tableName: payment_effects
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: payment_effects
+            columnNames: event_id
+            constraintName: payment_effects_event_id_uq
+      rollback:
+        - dropTable:
+            tableName: payment_effects
+        - dropForeignKeyConstraint:
+            baseTableName: receivables
+            constraintName: receivables_creditor_account_fk
+        - dropForeignKeyConstraint:
+            baseTableName: receivables
+            constraintName: receivables_debtor_account_fk
+        - dropColumn:
+            tableName: receivables
+            columnName: creditor_account_id
+        - dropColumn:
+            tableName: receivables
+            columnName: debtor_account_id
+        - dropTable:
+            tableName: bank_accounts
+        - dropTable:
+            tableName: banks
+
+  - changeSet:
+      id: 005-seed-brazilian-banks
+      author: rms
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: banks
+      changes:
+        - insert:
+            tableName: banks
+            columns:
+              - column: { name: id, value: '8d7a7f7a-4b3f-4d7c-9e53-5f6a2d4d0001' }
+              - column: { name: compe_code, value: '001' }
+              - column: { name: ispb, value: '00000000' }
+              - column: { name: name, value: 'Banco do Brasil' }
+        - insert:
+            tableName: banks
+            columns:
+              - column: { name: id, value: '8d7a7f7a-4b3f-4d7c-9e53-5f6a2d4d0002' }
+              - column: { name: compe_code, value: '033' }
+              - column: { name: ispb, value: '90400888' }
+              - column: { name: name, value: 'Santander' }
+        - insert:
+            tableName: banks
+            columns:
+              - column: { name: id, value: '8d7a7f7a-4b3f-4d7c-9e53-5f6a2d4d0003' }
+              - column: { name: compe_code, value: '104' }
+              - column: { name: ispb, value: '00360305' }
+              - column: { name: name, value: 'Caixa Econômica Federal' }
+        - insert:
+            tableName: banks
+            columns:
+              - column: { name: id, value: '8d7a7f7a-4b3f-4d7c-9e53-5f6a2d4d0004' }
+              - column: { name: compe_code, value: '237' }
+              - column: { name: ispb, value: '60746948' }
+              - column: { name: name, value: 'Bradesco' }
+        - insert:
+            tableName: banks
+            columns:
+              - column: { name: id, value: '8d7a7f7a-4b3f-4d7c-9e53-5f6a2d4d0005' }
+              - column: { name: compe_code, value: '341' }
+              - column: { name: ispb, value: '60701190' }
+              - column: { name: name, value: 'Itaú Unibanco' }
+        - insert:
+            tableName: banks
+            columns:
+              - column: { name: id, value: '8d7a7f7a-4b3f-4d7c-9e53-5f6a2d4d0006' }
+              - column: { name: compe_code, value: '260' }
+              - column: { name: ispb, value: '18236120' }
+              - column: { name: name, value: 'Nubank' }
+      rollback:
+        - delete:
+            tableName: banks
+            where: compe_code IN ('001', '033', '104', '237', '341', '260')
