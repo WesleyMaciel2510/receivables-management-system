@@ -1,7 +1,7 @@
 package com.rms.config;
 
-import com.rms.model.AppUser;
-import com.rms.repository.AppUserRepository;
+import com.rms.model.User;
+import com.rms.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Profile("!dev")
 public class SecurityDataInitializer {
     @Bean
-    CommandLineRunner initializeSecurityUser(SecurityProperties properties, AppUserRepository repository,
+    CommandLineRunner initializeSecurityUser(SecurityProperties properties, UserRepository repository,
             PasswordEncoder passwordEncoder) {
         return args -> {
             SecurityProperties.Bootstrap bootstrap = properties.bootstrap();
@@ -23,9 +23,12 @@ public class SecurityDataInitializer {
             }
             String passwordHash = passwordEncoder.encode(bootstrap.password());
             repository.findByUsername(bootstrap.username()).ifPresentOrElse(user -> {
-                user.updateCredentials(passwordHash, bootstrap.roles());
+                user.setPassword(passwordHash);
                 repository.save(user);
-            }, () -> repository.save(new AppUser(bootstrap.username(), passwordHash, bootstrap.roles())));
+            }, () -> {
+                User newUser = new User(bootstrap.username(), passwordHash, bootstrap.username() + "@rms.local", "Admin", "User", null);
+                repository.save(newUser);
+            });
         };
     }
 }

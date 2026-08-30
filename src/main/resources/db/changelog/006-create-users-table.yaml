@@ -1,62 +1,85 @@
 databaseChangeLog:
   - changeSet:
-      id: 003-create-app-users
+      id: 006-create-users-table
       author: rms
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
         - not:
             tableExists:
-              tableName: app_users
+              tableName: users
       changes:
         - createTable:
-            tableName: app_users
+            tableName: users
             columns:
               - column:
                   name: id
-                  type: UUID
+                  type: BIGSERIAL
                   constraints:
                     primaryKey: true
                     nullable: false
               - column:
                   name: username
-                  type: VARCHAR(120)
+                  type: VARCHAR(255)
                   constraints:
                     nullable: false
                     unique: true
               - column:
-                  name: password_hash
+                  name: password
                   type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
-                  name: roles
-                  type: VARCHAR(500)
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: first_name
+                  type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
-                  name: enabled
-                  type: BOOLEAN
-                  defaultValueBoolean: true
+                  name: last_name
+                  type: VARCHAR(255)
                   constraints:
                     nullable: false
               - column:
                   name: created_at
                   type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: now()
                   constraints:
                     nullable: false
               - column:
                   name: updated_at
                   type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: now()
                   constraints:
                     nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: linked_table
+                  type: VARCHAR(255)
         - createIndex:
-            tableName: app_users
-            indexName: app_users_username_idx
+            tableName: users
+            indexName: idx_users_username
             unique: true
             columns:
               - column:
                   name: username
+        - createIndex:
+            tableName: users
+            indexName: idx_users_email
+            unique: true
+            columns:
+              - column:
+                  name: email
       rollback:
         - dropTable:
-            tableName: app_users
+            tableName: users

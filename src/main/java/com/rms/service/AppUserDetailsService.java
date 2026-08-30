@@ -1,6 +1,6 @@
 package com.rms.service;
 
-import com.rms.repository.AppUserRepository;
+import com.rms.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -8,15 +8,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class AppUserDetailsService implements UserDetailsService {
-    private final AppUserRepository repository;
+    private final UserRepository repository;
 
-    public AppUserDetailsService(AppUserRepository repository) {
+    public AppUserDetailsService(UserRepository repository) {
         this.repository = repository;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return repository.findByUsername(username)
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        return repository.findByUsernameOrEmail(usernameOrEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
     }
 }

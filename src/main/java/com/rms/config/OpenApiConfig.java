@@ -9,6 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(title = "Sistema de Gestão de Recebíveis API", version = "v1",
                 description = "API para cadastro de clientes e controle de recebíveis."),
-        servers = @Server(url = "http://localhost:8080", description = "Ambiente local"))
+        servers = @Server(url = "http://localhost:8081", description = "Ambiente local"))
 public class OpenApiConfig {
 }

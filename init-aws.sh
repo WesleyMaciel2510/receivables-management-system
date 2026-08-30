@@ -21,3 +21,5 @@ echo "AWS_PAYMENT_TOPIC_ARN=$topic_arn"
 echo "AWS_RECONCILIATION_QUEUE_URL=$reconciliation_url"
 echo "AWS_ANALYTICS_QUEUE_URL=$analytics_url"
 echo "AWS_ANALYTICS_BUCKET=$BUCKET"
+
+touch /tmp/.ready

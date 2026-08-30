@@ -1,5 +1,8 @@
 package com.rms.controller;
 
+import com.rms.exception.InvalidCredentialsException;
+import com.rms.exception.InvalidPasswordUpdateTokenException;
+import com.rms.exception.InvalidVerificationCodeException;
 import com.rms.service.ConflictException;
 import com.rms.service.InvalidStateTransitionException;
 import com.rms.service.PaymentPublicationException;
@@ -15,6 +18,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidCredentials(InvalidCredentialsException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid credentials"));
+    }
+
+    @ExceptionHandler(InvalidVerificationCodeException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidVerificationCode(InvalidVerificationCodeException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid verification code"));
+    }
+
+    @ExceptionHandler(InvalidPasswordUpdateTokenException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidPasswordUpdateToken(InvalidPasswordUpdateTokenException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid password update token"));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {

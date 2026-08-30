@@ -222,6 +222,7 @@ s3://recebiveis-analytics/year=2026/month=08/day=23/payments_1724409100.parquet
 | **Data Lake & Cloud** | AWS S3, DuckDB, Apache Parquet (Snappy) |
 | **Scheduled Jobs** | Spring Batch |
 | **Security** | Spring Security, JWT, CPF/CNPJ Encryption |
+| **Email Delivery** | Gmail SMTP |
 
 ---
 
@@ -239,7 +240,26 @@ Launch PostgreSQL and LocalStack containerized services:
 docker-compose up -d
 ```
 
-### 2. Auto-Provision Queues, Topics & Buckets
+### 2. Configure Environment Variables
+Copy the sample file and fill in secrets:
+
+```bash
+cp .env-example .env
+```
+
+Required variables:
+| Variable | Description |
+| :--- | :--- |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_URL` | PostgreSQL connection |
+| `APP_ENCRYPTION_SECRET` | 32-char hex for field encryption |
+| `APP_SECURITY_JWT_SECRET` | 32-char hex for JWT signing |
+| `APP_SECURITY_PASSWORD` | Bootstrap admin password |
+| `GMAIL_USERNAME` | Gmail address (used as `from` in SMTP) |
+| `GMAIL_APP_PASSWORD` | Gmail App Password (not account password) |
+
+**Email delivery**: Gmail SMTP. The client receives a generic `200 OK` response regardless of delivery success; failures are logged server-side only.
+
+### 3. Auto-Provision Queues, Topics & Buckets
 LocalStack runs `init-aws.sh` automatically on startup:
 
 * 📢 **SNS Topic**: `arn:aws:sns:us-east-1:000000000000:payment-fanout-topic.fifo`
