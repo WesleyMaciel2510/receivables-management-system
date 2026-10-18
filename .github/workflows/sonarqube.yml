@@ -24,6 +24,12 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      sonarqube:
+        image: sonarqube:community
+        env:
+          SONAR_FORCEAUTHENTICATION: "false"
+        ports:
+          - 9000:9000
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,7 +56,37 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Build and analyze
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify sonar:sonar -Dsonar.projectKey=rms-backend
+      - name: Wait for SonarQube to be ready
+        run: |
+          echo "Waiting for SonarQube on http://localhost:9000 ..."
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:9000/api/system/status | grep -q '"status":"UP"'; then
+              echo "SonarQube is UP."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "SonarQube did not become ready in time." >&2
+          exit 1
+
+      - name: Generate SonarQube analysis token
+        run: |
+          for i in $(seq 1 12); do
+            TOKEN=$(curl -fsS -u admin:admin -X POST \
+              "http://localhost:9000/api/user_tokens/generate?name=ci" | jq -r '.token')
+            if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+              echo "::add-mask::$TOKEN"
+              echo "SONAR_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Failed to generate a SonarQube analysis token." >&2
+          exit 1
+
+      - name: Build, test and analyze
+        run: >-
+          mvn -B verify sonar:sonar
+          -Dsonar.projectKey=rms-backend
+          -Dsonar.host.url=http://localhost:9000
+          -Dsonar.token=$SONAR_TOKEN
