@@ -2,9 +2,11 @@ package com.rms.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 @Service
+@Primary
 public class CompositeEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(CompositeEmailService.class);

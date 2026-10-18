@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -19,25 +20,27 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
+    private static final String ERROR_KEY = "error";
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleInvalidCredentials(InvalidCredentialsException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid credentials"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR_KEY, "Invalid credentials"));
     }
 
     @ExceptionHandler(InvalidVerificationCodeException.class)
     public ResponseEntity<Map<String, String>> handleInvalidVerificationCode(InvalidVerificationCodeException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid verification code"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR_KEY, "Invalid verification code"));
     }
 
     @ExceptionHandler(InvalidPasswordUpdateTokenException.class)
     public ResponseEntity<Map<String, String>> handleInvalidPasswordUpdateToken(InvalidPasswordUpdateTokenException exception) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid password update token"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR_KEY, "Invalid password update token"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {
         Map<String, String> fields = exception.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.toMap(error -> error.getField(), error -> error.getDefaultMessage(), (first, second) -> first));
+                .collect(Collectors.toMap(FieldError::getField, error -> error.getDefaultMessage(), (first, second) -> first));
         return response(HttpStatus.BAD_REQUEST, "Validation failed", fields);
     }
 

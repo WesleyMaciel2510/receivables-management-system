@@ -9,7 +9,6 @@ import com.rms.repository.ReceivableRepository;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,10 +43,6 @@ public class PaymentReconciliationService {
             creditor.credit(event.amount());
         }
         receivable.applyPayment(event.amount());
-        try {
-            paymentEffectRepository.saveAndFlush(new PaymentEffect(event.eventId()));
-        } catch (DataIntegrityViolationException duplicate) {
-            throw duplicate;
-        }
+        paymentEffectRepository.saveAndFlush(new PaymentEffect(event.eventId()));
     }
 }

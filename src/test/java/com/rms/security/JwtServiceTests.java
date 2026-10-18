@@ -34,14 +34,14 @@ class JwtServiceTests {
     @Test
     void rejectsMalformedExpiredWrongIssuerAndWrongSignatureTokens() {
         assertThrows(RuntimeException.class, () -> service.parseAndValidate("not-a-jwt"));
-        assertThrows(RuntimeException.class, () -> service.parseAndValidate(signedToken(
-                "test-issuer", Instant.now().minusSeconds(120), Instant.now().minusSeconds(60), KEY)));
-        assertThrows(RuntimeException.class, () -> service.parseAndValidate(signedToken(
-                "another-issuer", Instant.now(), Instant.now().plusSeconds(60), KEY)));
+        String expiredToken = signedToken("test-issuer", Instant.now().minusSeconds(120), Instant.now().minusSeconds(60), KEY);
+        assertThrows(RuntimeException.class, () -> service.parseAndValidate(expiredToken));
+        String wrongIssuerToken = signedToken("another-issuer", Instant.now(), Instant.now().plusSeconds(60), KEY);
+        assertThrows(RuntimeException.class, () -> service.parseAndValidate(wrongIssuerToken));
         SecretKey wrongKey = Keys.hmacShaKeyFor(
                 "different-secret-with-at-least-32-characters-1234567890".getBytes(StandardCharsets.UTF_8));
-        assertThrows(RuntimeException.class, () -> service.parseAndValidate(signedToken(
-                "test-issuer", Instant.now(), Instant.now().plusSeconds(60), wrongKey)));
+        String wrongKeyToken = signedToken("test-issuer", Instant.now(), Instant.now().plusSeconds(60), wrongKey);
+        assertThrows(RuntimeException.class, () -> service.parseAndValidate(wrongKeyToken));
     }
 
     private static String signedToken(String issuer, Instant issuedAt, Instant expiration, SecretKey key) {

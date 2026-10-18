@@ -29,6 +29,8 @@ mvn spring-boot:run
 | Build only | `mvn clean install -DskipTests` |
 | Lint (if configured) | `mvn checkstyle:check` |
 | View API docs | `http://localhost:8081/swagger-ui.html` |
+| Run SonarQube analysis | `mvn sonar:sonar -Dsonar.token=$SONAR_TOKEN` (token at `~/.sonarqube/rms-token.txt`) |
+| View SonarQube | `http://localhost:9000` (server at `C:\sonarqube\sonarqube-26.10.0.133078`, DB `sonar` in the docker-compose Postgres) |
 
 ## Architecture Notes
 - **Entry point**: `RmsApplication.java` — Spring Boot 4, Java 25

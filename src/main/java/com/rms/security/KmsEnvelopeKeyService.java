@@ -1,6 +1,5 @@
 package com.rms.security;
 
-import com.rms.config.AwsProperties;
 import com.rms.config.EncryptionProperties;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -16,8 +15,7 @@ public class KmsEnvelopeKeyService {
     private final KmsClient kmsClient;
     private final EncryptionProperties encryptionProperties;
 
-    public KmsEnvelopeKeyService(KmsClient kmsClient, EncryptionProperties encryptionProperties,
-            AwsProperties awsProperties) {
+    public KmsEnvelopeKeyService(KmsClient kmsClient, EncryptionProperties encryptionProperties) {
         this.kmsClient = kmsClient;
         this.encryptionProperties = encryptionProperties;
     }
@@ -41,6 +39,30 @@ public class KmsEnvelopeKeyService {
     public record EncryptedDataKey(String keyId, byte[] encryptedKey, byte[] transientPlaintextKey) {
         public EncryptedDataKey withoutPlaintext() {
             return new EncryptedDataKey(keyId, encryptedKey, null);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            return o instanceof EncryptedDataKey(var oKeyId, var oEncryptedKey, var oTransientPlaintextKey)
+                    && java.util.Objects.equals(keyId, oKeyId)
+                    && java.util.Arrays.equals(encryptedKey, oEncryptedKey)
+                    && java.util.Arrays.equals(transientPlaintextKey, oTransientPlaintextKey);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = java.util.Objects.hashCode(keyId);
+            result = 31 * result + java.util.Arrays.hashCode(encryptedKey);
+            result = 31 * result + java.util.Arrays.hashCode(transientPlaintextKey);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "EncryptedDataKey[keyId=" + keyId
+                    + ", encryptedKey=" + java.util.Arrays.toString(encryptedKey)
+                    + ", transientPlaintextKey=" + java.util.Arrays.toString(transientPlaintextKey) + "]";
         }
     }
 }

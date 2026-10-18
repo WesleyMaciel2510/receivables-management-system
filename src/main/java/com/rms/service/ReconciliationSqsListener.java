@@ -37,7 +37,7 @@ public class ReconciliationSqsListener {
                 reconciliationService.reconcile(event);
                 sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(properties.reconciliationQueueUrl())
                         .receiptHandle(message.receiptHandle()).build());
-            } catch (Exception ignored) {
+            } catch (Exception _) {
                 // Leave failed messages visible for retry and eventual redrive.
             }
         }

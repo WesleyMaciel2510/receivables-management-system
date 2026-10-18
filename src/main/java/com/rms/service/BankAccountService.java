@@ -43,7 +43,7 @@ public class BankAccountService {
             BankAccount account = new BankAccount(client, bank, request.accountNumber().trim(), request.agency().trim(),
                     request.accountType(), request.monthlyMaintenanceFee());
             return BankAccountResponse.from(accountRepository.saveAndFlush(account));
-        } catch (DataIntegrityViolationException exception) {
+        } catch (DataIntegrityViolationException _) {
             throw new ConflictException("Account type already exists for this client and bank");
         }
     }

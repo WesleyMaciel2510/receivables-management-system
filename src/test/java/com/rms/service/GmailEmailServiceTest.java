@@ -1,11 +1,9 @@
 package com.rms.service;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +30,7 @@ class GmailEmailServiceTest {
     }
 
     @Test
-    void sendPasswordRecoveryEmail_sendsCorrectContent() throws MessagingException {
+    void sendPasswordRecoveryEmail_sendsCorrectContent() {
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
         gmailEmailService.sendPasswordRecoveryEmail("user@example.com", "123456", "idempotent-key-1");

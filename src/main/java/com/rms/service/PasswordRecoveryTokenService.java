@@ -8,7 +8,6 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Date;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -23,6 +22,7 @@ public class PasswordRecoveryTokenService {
     private static final String CLAIM_PURPOSE = "purpose";
     private static final String CLAIM_CODE_HASH = "code_hash";
     private static final Duration TOKEN_EXPIRATION = Duration.ofMinutes(10);
+    private static final String DUMMY_SUBJECT = "dummy-nonexistent-user";
 
     private final SecretKey key;
     private final byte[] secretBytes;
@@ -39,8 +39,8 @@ public class PasswordRecoveryTokenService {
                 .subject(String.valueOf(userId))
                 .claim(CLAIM_PURPOSE, PURPOSE_PASSWORD_RECOVERY)
                 .claim(CLAIM_CODE_HASH, codeHash)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(TOKEN_EXPIRATION)))
+                .claim(Claims.ISSUED_AT, now.getEpochSecond())
+                .claim(Claims.EXPIRATION, now.plus(TOKEN_EXPIRATION).getEpochSecond())
                 .signWith(key)
                 .compact();
     }
@@ -49,11 +49,11 @@ public class PasswordRecoveryTokenService {
         Instant now = Instant.now();
         String dummyHash = hashCode("000000");
         return Jwts.builder()
-                .subject("dummy-nonexistent-user")
+                .subject(DUMMY_SUBJECT)
                 .claim(CLAIM_PURPOSE, PURPOSE_PASSWORD_RECOVERY)
                 .claim(CLAIM_CODE_HASH, dummyHash)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(TOKEN_EXPIRATION)))
+                .claim(Claims.ISSUED_AT, now.getEpochSecond())
+                .claim(Claims.EXPIRATION, now.plus(TOKEN_EXPIRATION).getEpochSecond())
                 .signWith(key)
                 .compact();
     }
@@ -72,7 +72,7 @@ public class PasswordRecoveryTokenService {
             }
 
             String subject = claims.getSubject();
-            if (subject == null || "dummy-nonexistent-user".equals(subject)) {
+            if (subject == null || DUMMY_SUBJECT.equals(subject)) {
                 return null;
             }
 
@@ -87,7 +87,7 @@ public class PasswordRecoveryTokenService {
             }
 
             return Long.valueOf(subject);
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
     }
@@ -97,8 +97,8 @@ public class PasswordRecoveryTokenService {
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim(CLAIM_PURPOSE, PURPOSE_PASSWORD_UPDATE)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(TOKEN_EXPIRATION)))
+                .claim(Claims.ISSUED_AT, now.getEpochSecond())
+                .claim(Claims.EXPIRATION, now.plus(TOKEN_EXPIRATION).getEpochSecond())
                 .signWith(key)
                 .compact();
     }
@@ -117,12 +117,12 @@ public class PasswordRecoveryTokenService {
             }
 
             String subject = claims.getSubject();
-            if (subject == null || "dummy-nonexistent-user".equals(subject)) {
+            if (subject == null || DUMMY_SUBJECT.equals(subject)) {
                 return null;
             }
 
             return Long.valueOf(subject);
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
     }
@@ -133,8 +133,9 @@ public class PasswordRecoveryTokenService {
             mac.init(new SecretKeySpec(secretBytes, "HmacSHA256"));
             byte[] hash = mac.doFinal(code.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to calculate HMAC hash for code", e);
+        } catch (Exception _) {
+            throw new IllegalStateException("Failed to calculate HMAC hash for code");
         }
     }
 }
+

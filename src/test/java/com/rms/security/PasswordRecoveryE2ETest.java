@@ -1,8 +1,12 @@
 package com.rms.security;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import static org.mockito.Mockito.doNothing;
 
 import com.rms.model.User;
 import com.rms.repository.UserRepository;
@@ -23,7 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -48,18 +52,26 @@ import tools.jackson.databind.ObjectMapper;
 })
 class PasswordRecoveryE2ETest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private EmailService emailService;
+    @Autowired
+    private MockMvc mockMvc;
 
-    private ArgumentCaptor<String> codeCaptor;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
+
+    private final ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
 
     @BeforeEach
     void setUp() {
-        codeCaptor = ArgumentCaptor.forClass(String.class);
-        when(emailService.sendPasswordRecoveryEmail(anyString(), codeCaptor.capture(), anyString())).thenAnswer(invocation -> null);
+        doNothing().when(emailService).sendPasswordRecoveryEmail(anyString(), codeCaptor.capture(), anyString());
         // Create or reuse user with the provided email so subsequent runs are idempotent
         String email = "wesleymaciel2500@gmail.com";
         String username = "wesleymaciel2500";
@@ -82,27 +94,26 @@ class PasswordRecoveryE2ETest {
         return codeCaptor.getAllValues().isEmpty() ? null : codeCaptor.getAllValues().get(codeCaptor.getAllValues().size() - 1);
     }
 
-    @TestConfiguration
-    static class EmailServiceTestConfig {
+    @Configuration
+    static class TestConfig {
+        @Bean
+        public ObjectMapper objectMapper() {
+            return new ObjectMapper();
+        }
+
         @Bean
         @Primary
         public EmailService emailService() {
             return new TestEmailService();
         }
-
-        @Bean
-        public ObjectMapper objectMapper() {
-            return new ObjectMapper();
-        }
     }
 
+
     static class TestEmailService implements EmailService {
-        private String lastCode;
         @Override
         public void sendPasswordRecoveryEmail(String recipientEmail, String verificationCode, String idempotencyKey) {
-            lastCode = verificationCode;
+            // Do nothing; the argument is captured by the ArgumentCaptor in the when clause
         }
-        public String getLastCode() { return lastCode; }
     }
 
     @Test
@@ -119,9 +130,9 @@ class PasswordRecoveryE2ETest {
         var recoveryJson = objectMapper.readTree(recoveryResponse);
         String challengeToken = recoveryJson.get("challengeToken").asText();
 
-        // 2. Get the verification code captured by TestEmailService
+        // 2. Get the verification code captured by the ArgumentCaptor
         String verificationCode = captureLastCode();
-        assertThat(verificationCode).isNotNull();
+        assertNotNull(verificationCode);
 
         // 3. Verify code
         var verifyResponse = mockMvc.perform(post("/api/auth/password-recovery/verify")
@@ -182,7 +193,7 @@ class PasswordRecoveryE2ETest {
 
         // Get the verification code captured by the mock
         String verificationCode = captureLastCode();
-        assertThat(verificationCode).isNotNull();
+        assertNotNull(verificationCode);
 
         // Attempt verification with wrong code
         mockMvc.perform(post("/api/auth/password-recovery/verify")

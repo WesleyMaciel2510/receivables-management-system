@@ -19,8 +19,8 @@ public class SensitiveDataBackfill {
 
     @Bean
     CommandLineRunner backfillSensitiveData(ClientRepository clients, ReceivableRepository receivables,
-            BlindIndexService indexes, FieldEncryptionService encryption) {
-        return args -> run(clients, receivables, indexes, encryption);
+            BlindIndexService indexes, FieldEncryptionService encryption, SensitiveDataBackfill self) {
+        return args -> self.run(clients, receivables, indexes, encryption);
     }
 
     @Transactional

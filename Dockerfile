@@ -9,5 +9,7 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 COPY --from=build /workspace/target/rms-*.jar app.jar
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+USER appuser
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

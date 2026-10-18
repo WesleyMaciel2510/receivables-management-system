@@ -3,12 +3,9 @@ package com.rms.service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.rms.config.AwsProperties;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -62,81 +59,70 @@ public class AnalyticsBatchWorker {
     public void poll() {
         if (properties.analyticsQueueUrl() == null || properties.analyticsQueueUrl().isBlank()) return;
         List<Message> messages = sqsClient.receiveMessage(ReceiveMessageRequest.builder()
-                .queueUrl(properties.analyticsQueueUrl()).maxNumberOfMessages(Math.min(10, Math.max(1, properties.analyticsBatchSize())))
+                .queueUrl(properties.analyticsQueueUrl()).maxNumberOfMessages(Math.clamp(properties.analyticsBatchSize(), 1, 10))
                 .waitTimeSeconds(1).visibilityTimeout(properties.visibilityTimeoutSeconds()).build()).messages();
         if (messages.isEmpty()) return;
         try {
-            Path file = writeBatch(messages);
+            byte[] data = writeBatch(messages);
             String key = "year=" + PATH_DATE.format(Instant.now()).substring(0, 4) + "/month="
                     + PATH_DATE.format(Instant.now()).substring(5, 7) + "/day="
                     + PATH_DATE.format(Instant.now()).substring(8, 10) + "/payments_"
                     + System.currentTimeMillis() + ".parquet";
             s3Client.putObject(PutObjectRequest.builder().bucket(properties.analyticsBucket()).key(key)
-                    .contentType("application/octet-stream").build(), RequestBody.fromFile(file));
+                    .contentType("application/octet-stream").build(), RequestBody.fromBytes(data));
             for (Message message : messages) {
                 sqsClient.deleteMessage(DeleteMessageRequest.builder().queueUrl(properties.analyticsQueueUrl())
                         .receiptHandle(message.receiptHandle()).build());
             }
-            Files.deleteIfExists(file);
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             // Keep the batch retryable when Parquet generation or object storage fails.
         }
     }
 
-    private Path writeBatch(List<Message> messages) throws IOException {
-        Path file = Files.createTempFile("payments-", ".parquet");
-        try (ParquetWriter<GenericRecord> writer = AvroParquetWriter.<GenericRecord>builder(new LocalOutputFile(file))
+    private byte[] writeBatch(List<Message> messages) throws IOException {
+        // Batch size is capped at the max SQS batch (10), so encoding in memory
+        // avoids writing files to the (possibly publicly writable) temp directory.
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (ParquetWriter<GenericRecord> writer = AvroParquetWriter.<GenericRecord>builder(new MemoryOutputFile(buffer))
                 .withSchema(SCHEMA).withCompressionCodec(CompressionCodecName.SNAPPY)
                 .withConf(new Configuration(false)).build()) {
             for (Message message : messages) {
                 PaymentPublisher.PaymentEvent event = readEvent(message.body());
-                GenericRecord record = new GenericData.Record(SCHEMA);
-                record.put("event_id", event.eventId().toString());
-                record.put("debtor_account_id", event.debtorAccountId().toString());
-                record.put("creditor_account_id", event.creditorAccountId().toString());
-                record.put("receivable_id", event.receivableId().toString());
-                record.put("amount", event.amount().doubleValue());
-                record.put("transaction_timestamp", event.transactionTimestamp() == null ? Instant.now().toEpochMilli() : event.transactionTimestamp().toEpochMilli());
-                writer.write(record);
+                GenericRecord avroRecord = new GenericData.Record(SCHEMA);
+                avroRecord.put("event_id", event.eventId().toString());
+                avroRecord.put("debtor_account_id", event.debtorAccountId().toString());
+                avroRecord.put("creditor_account_id", event.creditorAccountId().toString());
+                avroRecord.put("receivable_id", event.receivableId().toString());
+                avroRecord.put("amount", event.amount().doubleValue());
+                avroRecord.put("transaction_timestamp", event.transactionTimestamp() == null ? Instant.now().toEpochMilli() : event.transactionTimestamp().toEpochMilli());
+                writer.write(avroRecord);
             }
         }
-        return file;
+        return buffer.toByteArray();
     }
 
-    private String batchIdentity(List<Message> messages) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        messages.stream().map(message -> message.messageId() == null ? message.body() : message.messageId())
-                .sorted().forEach(value -> digest.update(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-        return HexFormat.of().formatHex(digest.digest(), 0, 12);
-    }
-
-    private PaymentPublisher.PaymentEvent readEvent(String body) throws IOException {
+    private PaymentPublisher.PaymentEvent readEvent(String body) {
         JsonNode node = objectMapper.readTree(body);
-        if (node.hasNonNull("Message")) node = objectMapper.readTree(node.get("Message").asText());
+        if (node.hasNonNull("Message")) node = objectMapper.readTree(node.get("Message").asString());
         return objectMapper.treeToValue(node, PaymentPublisher.PaymentEvent.class);
     }
 
-    private record LocalOutputFile(Path path) implements OutputFile {
-        @Override public PositionOutputStream create(long blockSizeHint) throws IOException { return new FilePositionOutputStream(path); }
-        @Override public PositionOutputStream createOrOverwrite(long blockSizeHint) throws IOException { return create(blockSizeHint); }
+    private record MemoryOutputFile(ByteArrayOutputStream out) implements OutputFile {
+        @Override public PositionOutputStream create(long blockSizeHint) { return new MemoryPositionOutputStream(out); }
+        @Override public PositionOutputStream createOrOverwrite(long blockSizeHint) { return create(blockSizeHint); }
         @Override public boolean supportsBlockSize() { return false; }
         @Override public long defaultBlockSize() { return 0; }
     }
 
-    private static final class FilePositionOutputStream extends PositionOutputStream {
-        private final java.io.OutputStream delegate;
+    private static final class MemoryPositionOutputStream extends PositionOutputStream {
+        private final ByteArrayOutputStream delegate;
         private long position;
 
-        private FilePositionOutputStream(Path path) throws IOException {
-            delegate = Files.newOutputStream(path);
-        }
+        private MemoryPositionOutputStream(ByteArrayOutputStream delegate) { this.delegate = delegate; }
         @Override public long getPos() { return position; }
-        @Override public void write(int value) throws IOException { delegate.write(value); position++; }
-        @Override public void write(byte[] bytes, int offset, int length) throws IOException { delegate.write(bytes, offset, length); position += length; }
-        @Override public void flush() throws IOException { delegate.flush(); }
-        @Override public void close() throws IOException { delegate.close(); }
+        @Override public void write(int value) { delegate.write(value); position++; }
+        @Override public void write(byte[] bytes, int offset, int length) { delegate.write(bytes, offset, length); position += length; }
+        @Override public void flush() { /* In-memory stream — nothing to flush. */ }
+        @Override public void close() { /* Delegated ByteArrayOutputStream does not need explicit close. */ }
     }
 }
-
-
-

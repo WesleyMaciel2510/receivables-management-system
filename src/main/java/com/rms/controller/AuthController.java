@@ -36,35 +36,20 @@ public class AuthController {
 
     @PostMapping("/password-recovery")
     public ResponseEntity<PasswordRecoveryResponse> requestPasswordRecovery(@Valid @RequestBody PasswordRecoveryRequest request) {
-        try {
-            log.info("Password recovery request received for email: {}", request.email());
-            return ResponseEntity.ok(passwordRecoveryService.requestRecovery(request));
-        } catch (Exception e) {
-            log.error("Password recovery failed for email {}: {}", request.email(), e.getMessage());
-            throw e;
-        }
+        log.info("Password recovery request received for email: {}", request.email());
+        return ResponseEntity.ok(passwordRecoveryService.requestRecovery(request));
     }
 
     @PostMapping("/password-recovery/verify")
     public ResponseEntity<VerifyRecoveryCodeResponse> verifyRecoveryCode(@Valid @RequestBody VerifyRecoveryCodeRequest request) {
-        try {
-            log.info("Verify recovery code request for challenge token");
-            return ResponseEntity.ok(passwordRecoveryService.verifyRecoveryCode(request));
-        } catch (Exception e) {
-            log.error("Verify recovery code failed: {}", e.getMessage());
-            throw e;
-        }
+        log.info("Verify recovery code request for challenge token");
+        return ResponseEntity.ok(passwordRecoveryService.verifyRecoveryCode(request));
     }
 
     @PostMapping("/password-recovery/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updatePassword(@Valid @RequestBody UpdatePasswordRequest request) {
-        try {
-            log.info("Update password request received");
-            passwordRecoveryService.updatePassword(request);
-        } catch (Exception e) {
-            log.error("Update password failed: {}", e.getMessage());
-            throw e;
-        }
+        log.info("Update password request received");
+        passwordRecoveryService.updatePassword(request);
     }
 }

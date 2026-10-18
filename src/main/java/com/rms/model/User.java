@@ -172,7 +172,7 @@ public class User implements UserDetails {
     }
 
     public boolean isActive() {
-        return active;
+        return isEnabled();
     }
 
     public void setActive(boolean active) {
