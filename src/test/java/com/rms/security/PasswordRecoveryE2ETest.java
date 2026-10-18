@@ -20,12 +20,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -64,7 +64,7 @@ class PasswordRecoveryE2ETest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
+    @MockitoBean
     private EmailService emailService;
 
     private final ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
@@ -94,25 +94,11 @@ class PasswordRecoveryE2ETest {
         return codeCaptor.getAllValues().isEmpty() ? null : codeCaptor.getAllValues().get(codeCaptor.getAllValues().size() - 1);
     }
 
-    @Configuration
+    @TestConfiguration
     static class TestConfig {
         @Bean
         public ObjectMapper objectMapper() {
             return new ObjectMapper();
-        }
-
-        @Bean
-        @Primary
-        public EmailService emailService() {
-            return new TestEmailService();
-        }
-    }
-
-
-    static class TestEmailService implements EmailService {
-        @Override
-        public void sendPasswordRecoveryEmail(String recipientEmail, String verificationCode, String idempotencyKey) {
-            // Do nothing; the argument is captured by the ArgumentCaptor in the when clause
         }
     }
 
